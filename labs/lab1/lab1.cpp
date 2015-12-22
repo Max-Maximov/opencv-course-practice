@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 	string imgname;
 	if (argc != 2)
 	{
-		imgname = "test.jpg";
+		imgname = "test.png";
 	}
 	else
 		imgname = argv[1];
@@ -35,17 +35,17 @@ int main(int argc, char** argv)
 	waitKey(0);
 	Mat grayImage;
 	cvtColor(image, grayImage, COLOR_BGR2GRAY);
-	
+
 	Mat edges;
 	Canny(grayImage, edges, 50, 150);
 
-	
+
 	Mat invEdges;
 	bitwise_not(edges, invEdges);
-	
+
 	Mat dMap;
 	distanceTransform(invEdges, dMap, CV_DIST_L2, 0);
-	
+
 	vector<Mat> channels(3);
 	split(image, channels);
 	for (int c = 0; c < 3; c++)
@@ -58,14 +58,20 @@ int main(int argc, char** argv)
 				int masksize = static_cast <int> (dMap.at <float>(j, i) / 5);
 				if (!masksize) masksize = 1;
 				if (masksize > 5) masksize = 5;
-				if (j > masksize && i > masksize && j < heigth - masksize && i < width - masksize)
+				if (j >= masksize && i >= masksize && j < heigth - masksize && i < width - masksize)
 				{
-					channels[c].at<uchar>(j, i) =
-						(intImage.at<int>(j + masksize, i + masksize) -
-							intImage.at<int>(j - masksize, i + masksize) -
-							intImage.at<int>(j + masksize, i - masksize) +
-							intImage.at<int>(j - masksize, i - masksize)) / ((masksize * 2) * (masksize * 2));
+					int sA = (j == masksize || i == masksize) ? 
+						0 : intImage.at<int>(j - masksize - 1, i - masksize - 1);
+					
+					int sB = (j == masksize) ? 
+						0 : intImage.at<int>(j - masksize - 1, i + masksize);
+					
+					int sC = (i == masksize) ?
+						0 : intImage.at<int>(j + masksize, i - masksize - 1);
 
+					int sD = intImage.at<int>(j + masksize, i + masksize);
+					
+					channels[c].at<uchar>(j, i) = (sA + sD - sB - sC) / ((masksize * 2 + 1) * (masksize * 2 + 1));
 				}
 			}
 	}
